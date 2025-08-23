@@ -1,7 +1,9 @@
-import { Form } from "react-router";
+import { data, Form, redirect, type ActionFunctionArgs } from "react-router";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
+import { authenticator } from "~/services/auth.server";
 import type { Route } from "./+types";
+import { getSession } from "~/services/session.server";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,7 +12,21 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+
+  if (session.has("user")) {
+    return redirect("/dashboard");
+  }
+  return data({ error: session.get("error") });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  return await authenticator.authenticate("cognito-auth", request);
+}
+
 export default function Index({ loaderData }: Route.ComponentProps) {
+  const { error } = loaderData;
   return (
     <main className="flex items-center justify-center pt-16 pb-4">
       <div className="flex-1 flex flex-col items-center min-h-0">
@@ -37,6 +53,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             >
               Get Started
             </button>
+            {error ? (
+              <div className="error mt-4 text-red-500">{error}</div>
+            ) : null}
           </Form>
         </div>
       </div>

@@ -1,9 +1,18 @@
 import { FaUserCircle } from "react-icons/fa";
 import { useState } from "react";
-import { Form, NavLink, Outlet } from "react-router";
+import { data, Form, NavLink, Outlet } from "react-router";
+import type { Route } from "./+types/dashboard-layout";
+import { getSession } from "~/services/session.server";
 
-export default function Layout() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+  const user = session.get("user");
+  return data({ user });
+}
+
+export default function Layout({ loaderData }: Route.ComponentProps) {
   const [open, setOpen] = useState(false);
+  const { user } = loaderData;
 
   return (
     <div>
@@ -18,21 +27,24 @@ export default function Layout() {
             >
               Dashboard
             </NavLink>
-            {/* user logic to show admin starts */}
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                isActive ? "underline font-semibold" : "hover:underline"
-              }
-            >
-              Admin
-            </NavLink>
-            {/* user logic to show admin ends */}
+            {user?.admin ? (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  isActive ? "underline font-semibold" : "hover:underline"
+                }
+              >
+                Admin
+              </NavLink>
+            ) : null}
           </div>
 
           <div className="relative">
             <div className="flex">
-              {/* add display user name logic */}
+              {user?.name ? (
+                <div className="text-white mr-2">{user.name}</div>
+              ) : null}
+
               <button
                 onClick={() => setOpen(!open)}
                 className="text-2xl cursor-pointer"
